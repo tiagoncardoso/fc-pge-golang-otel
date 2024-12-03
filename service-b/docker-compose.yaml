@@ -1,0 +1,7 @@
+services:
+  app:
+    build: .
+    container_name: zip-weather-app
+    restart: always
+    ports:
+      - "8080:8080"

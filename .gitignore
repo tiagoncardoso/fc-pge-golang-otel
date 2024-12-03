@@ -1,0 +1,6 @@
+.docker/*
+.idea/
+coverage*
+.env
+tmp
+.air.toml
