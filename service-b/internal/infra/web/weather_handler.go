@@ -53,6 +53,7 @@ func (h *WeatherHandler) GetWeatherByZip(w http.ResponseWriter, r *http.Request)
 	}
 
 	output := dto.WeatherDetailsOutputDto{
+		City:  zipData.Localidade,
 		TempC: weatherData.Current.TempC,
 		TempF: helper.ConvertCelsiusToFarenheig(weatherData.Current.TempC),
 		TempK: helper.ConvertCelsiusToKelvin(weatherData.Current.TempC),
