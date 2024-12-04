@@ -19,7 +19,7 @@ func main() {
 	webServer := webserver.NewWebServer(conf.WebServerPort)
 	weatherHandler := web.NewWeatherHandler(findDataUsecase)
 
-	webServer.AddHandler("/temperature/{cep}", "GET", weatherHandler.GetWeatherByZip)
+	webServer.AddHandler("/", "POST", weatherHandler.GetWeather)
 
 	fmt.Println("Starting web server on port", conf.WebServerPort)
 	webServer.Start()
