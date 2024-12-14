@@ -1,0 +1,61 @@
+services:
+  jaeger-all-in-one:
+    image: jaegertracing/all-in-one
+    container_name: jaeger-all-in-one
+    restart: always
+    ports:
+      - "16686:16686"
+      - "14268"
+      - "14250"
+    networks:
+      - otel-network
+
+  zipkin-all-in-one:
+    image: openzipkin/zipkin
+    container_name: zipkin-all-in-one
+    environment:
+      - STORAGE_TYPE=mem
+    ports:
+      - "9411:9411"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9411/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - otel-network
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: always
+    volumes:
+      - .docker/prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - otel-network
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    container_name: otel-collector
+    restart: always
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - .docker/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "1888:1888"   # pprof extension
+      - "8888:8888"   # Prometheus metrics exposed by collector
+      - "8889:8889"   # Prometheus exporter metrics
+      - "13133:13133" # Health check
+      - "4317:4317"   # OpenTelemetry gRPC receiver
+      - "55679:55679" # zPages extension
+    depends_on:
+      - jaeger-all-in-one
+      - zipkin-all-in-one
+    networks:
+      - otel-network
+
+networks:
+  otel-network:
+    driver: bridge
