@@ -1,10 +1,11 @@
-package webserver
+package web
 
 import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Handler struct {
@@ -36,6 +37,9 @@ func (s *WebServer) AddHandler(path string, method string, handler http.HandlerF
 }
 
 func (s *WebServer) Start() {
+	s.Router.Use(middleware.RequestID)
+	s.Router.Use(middleware.RealIP)
+	s.Router.Use(middleware.Recoverer)
 	s.Router.Use(middleware.Logger)
 
 	for _, handler := range s.Handlers {
@@ -52,6 +56,8 @@ func (s *WebServer) Start() {
 			s.Router.Head(handler.Path, handler.Handler)
 		}
 	}
+	s.Router.Handle("/metrics", promhttp.Handler())
+
 	err := http.ListenAndServe(":"+s.WebServerPort, s.Router)
 	if err != nil {
 		panic(err)

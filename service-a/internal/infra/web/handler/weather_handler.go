@@ -1,24 +1,38 @@
-package web
+package handler
 
 import (
 	"encoding/json"
 	"github.com/tiagoncardoso/fc-pge-golang-otel-a/internal/application/dto"
 	"github.com/tiagoncardoso/fc-pge-golang-otel-a/internal/application/helper"
 	"github.com/tiagoncardoso/fc-pge-golang-otel-a/internal/application/usecase"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"net/http"
 )
 
 type WeatherHandler struct {
 	RequestWeatherUsecase *usecase.RequestWeather
+	Tracer                trace.Tracer
+	ServiceNameRequest    string
 }
 
-func NewWeatherHandler(requestWeatherApiUsecase *usecase.RequestWeather) *WeatherHandler {
+func NewWeatherHandler(requestWeatherApiUsecase *usecase.RequestWeather, tracer trace.Tracer, serviceNameRequest string) *WeatherHandler {
 	return &WeatherHandler{
 		RequestWeatherUsecase: requestWeatherApiUsecase,
+		Tracer:                tracer,
+		ServiceNameRequest:    serviceNameRequest,
 	}
 }
 
 func (h *WeatherHandler) GetWeather(w http.ResponseWriter, r *http.Request) {
+	carrier := propagation.HeaderCarrier(r.Header)
+	ctx := r.Context()
+	ctx = otel.GetTextMapPropagator().Extract(ctx, carrier)
+
+	ctx, span := h.Tracer.Start(ctx, h.ServiceNameRequest)
+	defer span.End()
+
 	var requestBody struct {
 		Cep string `json:"cep"`
 	}
@@ -36,21 +50,14 @@ func (h *WeatherHandler) GetWeather(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	weatherData, err := h.RequestWeatherUsecase.Execute(requestBody.Cep)
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(r.Header))
+	weatherData, err := h.RequestWeatherUsecase.Execute(requestBody.Cep, ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("can not find zipcode"))
 
 		return
 	}
-
-	// TODO: >> Olhar como tratar o erro de resposta da api b
-	//if zipData.Erro == "true" {
-	//	w.WriteHeader(http.StatusNotFound)
-	//	w.Write([]byte("can not find zipcode"))
-	//
-	//	return
-	//}
 
 	output := dto.WeatherDetailsOutputDto{
 		City:  weatherData.City,
