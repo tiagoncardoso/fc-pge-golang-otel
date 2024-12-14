@@ -3,8 +3,11 @@ package config
 import "github.com/spf13/viper"
 
 type Conf struct {
-	ApiService    string `mapstructure:"API_SERVICE"`
-	WebServerPort string `mapstructure:"WEB_SERVER_PORT"`
+	ApiService         string `mapstructure:"API_SERVICE"`
+	WebServerPort      string `mapstructure:"WEB_SERVER_PORT"`
+	ServiceName        string `mapstructure:"SERVICE_NAME"`
+	CollectorUrl       string `mapstructure:"COLLECTOR_URL"`
+	ServiceNameRequest string `mapstructure:"SERVICE_NAME_REQUEST"`
 }
 
 func LoadConfig() (*Conf, error) {
