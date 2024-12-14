@@ -4,30 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"time"
-)
-
-const (
-	API_REQUEST_TIMEOUT = 5
 )
 
 type RequestData interface {
 	interface{}
 }
 
-func HttpGetRequest[T RequestData](url string) (T, error) {
+func HttpGetRequest[T RequestData](url string, ctx context.Context) (T, error) {
 	headers := map[string]string{
 		"Content-Type": "application/json",
 		"Accept":       "application/json",
 	}
-	return httpRequest[T](url, http.MethodGet, headers)
+	return httpRequest[T](url, http.MethodGet, headers, ctx)
 }
 
-func httpRequest[T RequestData](url string, method string, headers map[string]string) (T, error) {
+func httpRequest[T RequestData](url string, method string, headers map[string]string, ctx context.Context) (T, error) {
 	var apiResponse T
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(API_REQUEST_TIMEOUT))
-	defer cancel()
 
 	cl := http.Client{}
 	req, err := http.NewRequestWithContext(ctx, method, url, nil)
