@@ -50,8 +50,7 @@ func (h *WeatherHandler) GetWeather(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(r.Header))
-	weatherData, err := h.RequestWeatherUsecase.Execute(requestBody.Cep, ctx)
+	weatherData, err := h.RequestWeatherUsecase.Execute(requestBody.Cep, ctx, r)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("can not find zipcode"))

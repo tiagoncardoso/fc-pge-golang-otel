@@ -15,10 +15,6 @@ import (
 	"time"
 )
 
-//func init() {
-//	viper.AutomaticEnv()
-//}
-
 func main() {
 	conf, err := config.LoadConfig()
 	if err != nil {
@@ -41,12 +37,12 @@ func main() {
 		}
 	}()
 
-	tracer := otel.Tracer("fullcycle-service-a")
+	tracer := otel.Tracer(conf.ServiceNameRequest + "-tracer")
 
 	findDataUsecase := usecase.NewRequestWeather(conf.ApiService)
 
 	webServer := web.NewWebServer(conf.WebServerPort)
-	weatherHandler := handler.NewWeatherHandler(findDataUsecase, tracer, conf.ServiceNameRequest)
+	weatherHandler := handler.NewWeatherHandler(findDataUsecase, tracer, conf.ServiceName)
 
 	webServer.AddHandler("/", "POST", weatherHandler.GetWeather)
 
@@ -64,19 +60,4 @@ func main() {
 
 	_, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()
-
-	//conf, err := config.LoadConfig()
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//findDataUsecase := usecase.NewRequestWeather(conf.ApiService)
-	//
-	//webServer := webserver.NewWebServer(conf.WebServerPort)
-	//weatherHandler := web.NewWeatherHandler(findDataUsecase)
-	//
-	//webServer.AddHandler("/", "POST", weatherHandler.GetWeather)
-	//
-	//fmt.Println("Starting web server on port", conf.WebServerPort)
-	//webServer.Start()
 }

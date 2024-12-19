@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/tiagoncardoso/fc-pge-golang-otel-a/internal/application/dto"
 	"github.com/tiagoncardoso/fc-pge-golang-otel-a/pkg/http_request"
+	"net/http"
 	"strings"
 )
 
@@ -17,10 +18,10 @@ func NewRequestWeather(apiUrl string) *RequestWeather {
 	}
 }
 
-func (r *RequestWeather) Execute(zipCode string, ctx context.Context) (dto.WeatherDetailsOutputDto, error) {
+func (r *RequestWeather) Execute(zipCode string, ctx context.Context, req *http.Request) (dto.WeatherDetailsOutputDto, error) {
 	url := makeZipApiUrl(r.ApiUrl, zipCode)
 
-	respWeather, err := http_request.HttpGetRequest[dto.WeatherDetailsOutputDto](url, ctx)
+	respWeather, err := http_request.HttpGetRequest[dto.WeatherDetailsOutputDto](url, ctx, req)
 	if err != nil {
 		return dto.WeatherDetailsOutputDto{}, err
 	}
