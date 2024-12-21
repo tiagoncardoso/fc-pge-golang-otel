@@ -31,3 +31,60 @@ Baseado no cenário conhecido "Sistema de temperatura por CEP" denominado Servi�
 > #### Após a implementação dos serviços, adicione a implementação do OTEL + Zipkin:
 >> - Implementar tracing distribuído entre Serviço A - Serviço B
 >> - Utilizar span para medir o tempo de resposta do serviço de busca de CEP e busca de temperatura
+
+### 🗂️ Estrutura do Projeto
+    .
+    ├── .docker              # Arquivos de configuração utilizados pelo Docker
+    ├── service-a            # Serviço A (responsável pelo input)    
+    ├── service-b            # Serviço B (responsável pela orquestração)    
+    └── docker-compose.yaml  # Arquivo de configuração do Docker Compose    
+    
+**Service A**
+
+Estrutura e detalhes do projeto aqui: [service-a/README.md](service-a/README.md)
+
+**Service B**
+
+Estrutura e detalhes do projeto aqui: [service-b/README.md](service-b/README.md)
+
+#### 🧭 Parametrização
+As aplicações possuem arquivo de configuração independentes (usar o `.env.example` por referência).
+
+```dotenv
+##> Service-a [service-a/.env]
+
+API_SERVICE=http://service-b:8081/temperature/{ZIP}
+WEB_SERVER_PORT=8080
+SERVICE_NAME=service-a
+SERVICE_NAME_REQUEST=service-a-request
+COLLECTOR_URL=otel-collector:4317
+```
+```dotenv
+##> Service-b [service-b/.env]
+
+API_URL_ZIP=https://viacep.com.br/ws/{ZIP}/json/
+API_URL_WEATHER=https://api.weatherapi.com/v1/current.json?q={CITY}&key=
+API_KEY_WEATHER=b*********************1
+WEB_SERVER_PORT=8081
+SERVICE_NAME=service-b
+SERVICE_NAME_REQUEST=service-b-request
+COLLECTOR_URL=otel-collector:4317
+```
+
+> 💡 **Importante:**<br/>
+> Para executar a aplicação localmente, é necessário criar um arquivo `.env` na raiz do projeto com as informações acima. E adicionar a chave da API WeatherAPI no campo `API_KEY_WEATHER`.
+
+#### 🚀 Execução:
+Para executar a aplicação em ambiente local, basta utilizar o docker-compose disponível na raiz do projeto. Para isso, execute o comando abaixo:
+```bash
+$ docker-compose up
+```
+
+> 💡 **Portas necessárias:**
+> - Service A: 8080
+> - Service B: 8081
+> - Zipkin: 9411
+> - Jaeger: 16686
+> - Health check: 13133
+> - OpenTelemetry gRPC receiver: 4317
+> - zPages extension: 55679

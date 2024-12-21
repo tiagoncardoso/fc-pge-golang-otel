@@ -1,27 +1,16 @@
-## Go Template
+## Desafio #05 - Open Telemetry e Zipkin - Golang
 
 O sistema deve receber um CEP, identificar a cidade e retornar o clima atual (temperatura em graus celsius, fahrenheit e kelvin).
 
 ---
 #### 🖥️ Detalhes Gerais:
 
-Especificações e detalhes gerais do projeto. 
-- O sistema deve receber um CEP válido de 8 digitos
-- Será utilizada a API viaCEP para encontrar a localização que deseja consultar a temperatura: https://viacep.com.br/
-- Será utilizada a API WeatherAPI para consultar a temperatura da cidade: https://www.weatherapi.com/
-- O sistema deve responder adequadamente nos seguintes cenários:
-  - Em caso de sucesso:
-    - Código HTTP: **200**
-    - Response Body: **{ "temp_C": 28.5, "temp_F": 28.5, "temp_K": 28.5 }**
-  - Em caso de falha, caso o CEP seja inválido (com formato correto):
-    - Código HTTP: **422**
-    - Mensagem: **invalid zipcode**
-  - Em caso de falha, caso o CEP não seja encontrado:
-    -  Código HTTP: **404**
-    - Mensagem: **can not find zipcode**
-- Desenvolver testes automatizados para garantir a qualidade do código
-- Utilizar docker-compose para subir a aplicação
-- O sistema deverá ser publicado no Google Cloud Run
+- O sistema deve receber um input de 8 dígitos via POST, através do schema: `{ "cep": "29902555" }`
+- O sistema deve validar se o input é valido (contem 8 dígitos) e é uma `STRING`
+- Caso seja válido, será encaminhado para o Serviço B via HTTP
+- Caso seja inválido, deve retornar:
+  - Código HTTP: 422
+  - Mensagem: invalid zipcode
 
 > 💡 Dica:<br/>
 > - A conversão de Celsius para Fahrenheit é: **F = C * 9/5 + 32**
@@ -30,8 +19,8 @@ Especificações e detalhes gerais do projeto.
 #### 🗂️ Estrutura do Projeto
     .
     ├── cmd                  # Entrypoints da aplicação
-    │    └── weather_zip_app
-    │           └── main.go       ### Entrypoint principal
+    │    └── app_a
+    │           └── main.go  ### Entrypoint principal
     ├── config               # helpers para configuração da aplicação (viper)
     ├── internal
     │    ├── application     # Implementações de casos de uso e utilitários
@@ -42,7 +31,6 @@ Especificações e detalhes gerais do projeto.
     ├── pkg                  # Pacotes reutilizáveis utilizados na aplicação
     ├── test                 # Testes automatizados
     ├── Dockerfile           # Arquivo de configuração do Docker
-    ├── docker-compose.yaml  # Arquivo de configuração do Docker Compose
     ├── .env                 # Arquivo de parametrizações globais
     └── README.md
 
@@ -50,43 +38,39 @@ Especificações e detalhes gerais do projeto.
 A aplicação servidor possui um arquivo de configuração `.env` onde é possível definir as URL's das API's para busca de cep e informações sobre temperatura, além da porta padrão da aplicação.
 
 ```
-API_URL_ZIP = http://viacep.com.br/ws/{ZIP}/json/
-API_URL_WEATHER = https://api.weatherapi.com/v1/current.json?q={CITY}&key=
-API_KEY_WEATHER = b*********************1
-WEB_SERVER_PORT = 8080
+API_SERVICE=http://service-b:8081/{ZIP}
+WEB_SERVER_PORT=8080
+SERVICE_NAME=service-a
+SERVICE_NAME_REQUEST=service-a-request
+COLLECTOR_URL=otel-collector:4317
 ```
 
 > 💡 **Importante:**<br/>
-> Para executar a aplicação localmente, é necessário criar um arquivo `.env` na raiz do projeto com as informações acima. E adicionar a chave da API WeatherAPI no campo `API_KEY_WEATHER`.
+> Para executar a aplicação localmente, é necessário criar um arquivo `.env` (baseado no `.env.example`) na raiz do projeto com as informações acima.
 
 #### 🚀 Execução:
-Para executar a aplicação em ambiente local, basta utilizar o docker-compose disponível na raiz do projeto. Para isso, execute o comando abaixo:
-```bash
-$ docker-compose up
-```
-
-> 💡 O comando acima poderá falhar caso a porta da aplicação esteja em uso. Caso isso ocorra, será necessário alterar o valor da variável **WEB_SERVER_PORT** no arquivo `.env` ou encerrar o processo que utiliza a porta (por padrão) 8080.
+> Idealmente, o serviço deverá ser executado em conjunto com o serviço B e outros serviços que compõem a aplicação. Para isso, é possível utilizar o Docker Compose que está na raíz do projeto para subir todos os serviços de forma orquestrada.
 
 ### 📝 Usando a API:
 
 - **Buscar temperatura baseada no CEP informado:**
 
-#### 🖥️ Em ambiente local (utilizando o docker compose):
 ```bash
-$ curl --location 'http://localhost:8000/temperature/{zipCode}' \
+$ # POST
+$ curl --location 'http://localhost:8080' \
+--data '{
+    "cep": "96215300"
+}'
 ```
 
-#### 🌐 Em ambiente remoto (Google Cloud Run):
-```bash
-$ curl --location 'https://temperatura-cep-mcaf4qqlxq-uc.a.run.app/temperature/{zipCode}' \
-```
 ---
 #### Exemplo de resposta de sucesso (status code 200):
 ```json
 {
-  "temp_C": 28.5,
-  "temp_F": 83.3,
-  "temp_K": 301.6
+  "city": "Rio Grande",
+  "temp_C": 19.3,
+  "temp_F": 66.74000000000001,
+  "temp_K": 292.45
 }
 ```
 
