@@ -44,18 +44,14 @@ func (op *OpenTelemetry) InitProvider() (func(context.Context) error, error) {
 
 	traceProvider := op.NewTraceProvider(traceExporter, res)
 
-	otel.SetTextMapPropagator(propagation.TraceContext{})
 	otel.SetTracerProvider(traceProvider)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	return traceProvider.Shutdown, nil
 }
 
 func (op *OpenTelemetry) NewResource(ctx context.Context) (*resource.Resource, error) {
 	return resource.New(ctx,
-		resource.WithFromEnv(),
-		resource.WithProcess(),
-		resource.WithTelemetrySDK(),
-		resource.WithHost(),
 		resource.WithAttributes(
 			semconv.ServiceName(op.ServiceName),
 		),
@@ -63,6 +59,7 @@ func (op *OpenTelemetry) NewResource(ctx context.Context) (*resource.Resource, e
 }
 
 func (op *OpenTelemetry) NewExporter(ctx context.Context) (*otlptrace.Exporter, error) {
+	fmt.Println(op.CollectorURL)
 	conn, err := grpc.DialContext(ctx, op.CollectorURL,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),

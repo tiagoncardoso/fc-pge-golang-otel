@@ -4,7 +4,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/suite"
 	"github.com/tiagoncardoso/fc-pge-golang-otel-b/internal/application/usecase"
-	"github.com/tiagoncardoso/fc-pge-golang-otel-b/internal/infra/web"
+	"github.com/tiagoncardoso/fc-pge-golang-otel-b/internal/infra/web/handler"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -23,7 +23,7 @@ func (s *RequestWeatherDataTestSuite) SetupSuite() {
 
 	zipCodeUsecase := usecase.NewRequestZipData(ApiUrlZip)
 	weatherDataUsecase := usecase.NewRequestWeatherData(ApiUrlWeather + "" + ApiKeyWeather)
-	zipWeatherHandler := web.NewWeatherHandler(zipCodeUsecase, weatherDataUsecase)
+	zipWeatherHandler := handler.NewWeatherHandler(zipCodeUsecase, weatherDataUsecase)
 
 	r := chi.NewRouter()
 	r.Get("/temperature/{cep}", zipWeatherHandler.GetWeatherByZip)

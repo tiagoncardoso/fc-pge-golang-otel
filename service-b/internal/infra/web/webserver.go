@@ -1,4 +1,4 @@
-package webserver
+package web
 
 import (
 	"net/http"
@@ -36,6 +36,9 @@ func (s *WebServer) AddHandler(path string, method string, handler http.HandlerF
 }
 
 func (s *WebServer) Start() {
+	s.Router.Use(middleware.RequestID)
+	s.Router.Use(middleware.RealIP)
+	s.Router.Use(middleware.Recoverer)
 	s.Router.Use(middleware.Logger)
 
 	for _, handler := range s.Handlers {

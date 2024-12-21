@@ -1,4 +1,4 @@
-package web
+package handler
 
 import (
 	"encoding/json"
@@ -6,22 +6,35 @@ import (
 	"github.com/tiagoncardoso/fc-pge-golang-otel-b/internal/application/dto"
 	"github.com/tiagoncardoso/fc-pge-golang-otel-b/internal/application/helper"
 	"github.com/tiagoncardoso/fc-pge-golang-otel-b/internal/application/usecase"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"net/http"
 )
 
 type WeatherHandler struct {
-	ZipApiUsecase     *usecase.RequestZipData
-	WeatherApiUsecase *usecase.RequestWeatherData
+	ZipApiUsecase      *usecase.RequestZipData
+	WeatherApiUsecase  *usecase.RequestWeatherData
+	Tracer             trace.Tracer
+	ServiceNameRequest string
 }
 
-func NewWeatherHandler(zipApiUsecase *usecase.RequestZipData, weatherApiUsecase *usecase.RequestWeatherData) *WeatherHandler {
+func NewWeatherHandler(zipApiUsecase *usecase.RequestZipData, weatherApiUsecase *usecase.RequestWeatherData, tracer trace.Tracer, serviceNameRequest string) *WeatherHandler {
 	return &WeatherHandler{
-		ZipApiUsecase:     zipApiUsecase,
-		WeatherApiUsecase: weatherApiUsecase,
+		ZipApiUsecase:      zipApiUsecase,
+		WeatherApiUsecase:  weatherApiUsecase,
+		Tracer:             tracer,
+		ServiceNameRequest: serviceNameRequest,
 	}
 }
 
 func (h *WeatherHandler) GetWeatherByZip(w http.ResponseWriter, r *http.Request) {
+	carrier := propagation.HeaderCarrier(r.Header)
+	ctx := r.Context()
+	ctx = otel.GetTextMapPropagator().Extract(ctx, carrier)
+
+	ctx, span := h.Tracer.Start(ctx, h.ServiceNameRequest)
+	defer span.End()
 	var zipCode = chi.URLParam(r, "cep")
 
 	if !helper.IsValidZipCode(zipCode) {
@@ -31,7 +44,7 @@ func (h *WeatherHandler) GetWeatherByZip(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	zipData, err := h.ZipApiUsecase.Execute(helper.SanitizeZipCode(zipCode))
+	zipData, err := h.ZipApiUsecase.Execute(helper.SanitizeZipCode(zipCode), ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("can not find zipcode"))
@@ -46,7 +59,7 @@ func (h *WeatherHandler) GetWeatherByZip(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	weatherData, err := h.WeatherApiUsecase.Execute(zipData.Localidade)
+	weatherData, err := h.WeatherApiUsecase.Execute(zipData.Localidade, ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
