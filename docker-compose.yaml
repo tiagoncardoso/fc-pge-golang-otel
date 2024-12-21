@@ -56,6 +56,29 @@ services:
     networks:
       - otel-network
 
+  service-a:
+    build: ./service-a
+    container_name: zip-weather-app-a
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - otel-collector
+      - service-b
+    networks:
+      - otel-network
+
+  service-b:
+    build: ./service-b
+    container_name: zip-weather-app-b
+    restart: always
+    ports:
+      - "8081:8081"
+    depends_on:
+      - otel-collector
+    networks:
+      - otel-network
+
 networks:
   otel-network:
     driver: bridge
